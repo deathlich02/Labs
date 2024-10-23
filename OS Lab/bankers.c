@@ -1,70 +1,89 @@
-#include <stdio.h>
-void main()
+#include<stdio.h>
+#include<stdlib.h>
+
+#define p 5
+#define r 3
+/*
+    avail, alloc, max, need
+*/
+void issafe(int proc[], int avail[], int max[][r],int alloc[][r])
 {
-    int row = 5, column = 3;
-    int max[5][3] = {{7, 5, 3}, // P0 // MAX Matrix
-                     {3, 2, 2}, // P1
-                     {9, 0, 2}, // P2
-                     {2, 2, 2}, // P3
-                     {4, 3, 3}};
-    ;
-    int alloc[5][3] = {{0, 1, 0}, // P0 // Allocation Matrix
-                       {2, 0, 0}, // P1
-                       {3, 0, 2}, // P2
-                       {2, 1, 1}, // P3
-                       {0, 0, 2}};
-    int available[3] = {3, 3, 2};
-    int finished[5], answer[5];
-    for (int i = 0; i < 5; i++)
+    int need[p][r],work[r];
+    for(int i = 0; i < p; i++)
     {
-        finished[i] = 0;
-    }
-    int need[5][3];
-    for (int i = 0; i < 5; i++)
-    {
-        for (int j = 0; j < 3; j++)
+        for(int j = 0;j < r; j++)
         {
             need[i][j] = max[i][j] - alloc[i][j];
         }
     }
-    int index = 0, flag;
-    for (int i = 0; i < 5; i++)
+
+    for(int j = 0;j < r; j++)
+            work[j] = avail[j];
+
+    int safeseq[p];
+    int finished[p] = {0};
+    int count = 0;
+    while(count < p)
     {
-        for (int j = 0; j < row; j++)
+        int found = 0;
+        for(int i = 0 ; i < p; i++)
         {
-            flag = 0;
-            for (int k = 0; k < column; k++)
+            if(finished[i] == 0)
             {
-                if (finished[j] == 0)
+                int j;
+                for(j = 0; j <r;j++)
                 {
-                    if (need[j][k] > available[k])
-                    {
-                        flag = 1;
+                    if(need[i][j] > work[j])
                         break;
-                    }
                 }
-            }
-            if (flag == 0 && finished[j] == 0)
-            {
-                answer[index] = j;
-                index++;
-                for (int x = 0; x < 3; x++)
+                if(j == r)
                 {
-                    available[x] += alloc[j][x];
-                }
-                finished[j] = 1;
+                    found = 1;
+                    for(int k = 0; k < r;k++)
+                        work[k] += alloc[i][k];
+                    safeseq[count++] = i;
+                    finished[i] = 1;
+                } 
             }
         }
-    }
-    if (index < row - 1)
-    {
-        printf("\nSEQUENCE IS UNSAFE");
-    }
-    else
-    {
-        for (int i = 0; i < 5; i++)
+        if(found != 1)
         {
-            printf("P%d->", answer[i]);
+            printf("Not safe \n");
+            return;
         }
+
     }
+    printf("The system is in a safe state.\nSafe sequence is: ");
+    for (int i = 0; i < p; i++) {
+        printf("%d ", safeseq[i]);
+    }
+    printf("\n");
+
+    return;
+
+}
+int main()
+{
+    int proc[] = {0, 1, 2, 3, 4}; 
+    int avail[] = {3, 3, 2};
+
+    int max[p][r] = {
+        {7, 5, 3},
+        {3, 2, 2},  
+        {9, 0, 2},  
+        {2, 2, 2}, 
+        {4, 3, 3}   
+    };
+
+    int alloc[p][r] = {
+        {0, 1, 0},  
+        {2, 0, 0},  
+        {3, 0, 2},  
+        {2, 1, 1},  
+        {0, 0, 2} 
+    };
+
+    issafe(proc, avail, max, alloc);
+
+    return 0;
 }

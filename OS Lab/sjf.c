@@ -1,80 +1,95 @@
-#include<stdio.h>
+#include <stdio.h>
+#include <limits.h>
 
-typedef struct{
-	int pid;
-	int at;
-	int bt;
-	int ct;
-	int wt;
-	int tat;
-}process;
+// Structure to store process details
+struct Process {
+    int pid;         // Process ID
+    int arrivalTime; // Arrival time of the process
+    int burstTime;   // Burst time of the process
+    int remainingTime; // Remaining time of the process (for preemption)
+    int completionTime; // Completion time of the process
+    int waitingTime; // Waiting time of the process
+    int turnaroundTime; // Turnaround time of the process
+    int isComplete;  // Completion flag
+};
 
-void sort_proc(process processes[], int n)
-{
-	process temp;
-	for(int i = 0;i < n-1;i++)
-	{
-		for(int j = i+1; j < n;j++)
-		{
-			if(processes[i].at > processes[j].at)
-			{
-				temp = processes[i];
-				processes[i] = processes[j];
-				processes[j] = temp;
-			}
-		}
-	}
+// Function to find the shortest remaining time process at a given time
+int findNextProcess(struct Process processes[], int n, int currentTime) {
+    int shortestProcessIndex = -1;
+    int minRemainingTime = INT_MAX;
+    
+    // Traverse through all processes
+    for (int i = 0; i < n; i++) {
+        if (processes[i].arrivalTime <= currentTime && !processes[i].isComplete && processes[i].remainingTime < minRemainingTime) {
+            minRemainingTime = processes[i].remainingTime;
+            shortestProcessIndex = i;
+        }
+    }
+    return shortestProcessIndex;
 }
 
-int main()
-{
-	int n = 4;
-	process processes[4] = {
-        {1, 0, 8, 0, 0, 0}, // Process 1: pid=1, at=0, bt=8
-        {2, 1, 4, 0, 0, 0}, // Process 2: pid=2, at=1, bt=4
-        {3, 2, 9, 0, 0, 0}, // Process 3: pid=3, at=2, bt=9
-        {4, 3, 5, 0, 0, 0}  // Process 4: pid=4, at=3, bt=5
-    };
-	
-	sort_proc(processes, n);
-	
-	int current_time = 0;
-	int completed = 0;
-	int min = -1;
-	int tot_wt = 0;
-	int tot_tat = 0;
-	
-	while(completed != n)
-	{
-		min = -1;
-		int min_bt = 1000;
-		
-		for(int i = 0;i < n;i++)
-		{
-			if(processes[i].at <= current_time && processes[i].ct == 0)
-			{
-				if(processes[i].bt <= min_bt)
-				{
-					min_bt = processes[i].bt;
-					min = i;
-				}
-			}
-		}
-		if(min != -1)
-		{
-			current_time += processes[min].bt;
-			completed += 1;
-			processes[min].ct = current_time;
-			processes[min].tat = current_time - processes[min].at;
-			processes[min].wt = processes[min].tat - processes[min].bt;
-			tot_tat += processes[min].tat;
-			tot_wt += processes[min].wt;
-		}
-		else
-			current_time++;
-	}
-	printf("\nAverage Waiting Time: %.2f\n", (float)tot_wt / n);
-    	printf("Average Turnaround Time: %.2f\n", (float)tot_tat / n);
-    	
-    	return 0;
-   }
+int main() {
+    int n;
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+    
+    struct Process processes[n];
+    int totalWaitingTime = 0, totalTurnaroundTime = 0;
+    
+    // Input process details
+    for (int i = 0; i < n; i++) {
+        processes[i].pid = i + 1;
+        printf("Enter arrival time for process %d: ", processes[i].pid);
+        scanf("%d", &processes[i].arrivalTime);
+        printf("Enter burst time for process %d: ", processes[i].pid);
+        scanf("%d", &processes[i].burstTime);
+        processes[i].remainingTime = processes[i].burstTime; // Initially, remaining time is burst time
+        processes[i].isComplete = 0; // Mark the process as incomplete
+    }
+    
+    int completedProcesses = 0;
+    int currentTime = 0;
+
+    // Loop until all processes are complete
+    while (completedProcesses != n) {
+        int shortestProcessIndex = findNextProcess(processes, n, currentTime);
+        
+        if (shortestProcessIndex == -1) {
+            currentTime++; // No process is available, so increment the current time
+            continue;
+        }
+
+        // Execute the process with the shortest remaining time
+        processes[shortestProcessIndex].remainingTime--;
+        currentTime++;
+
+        // Check if the process has completed
+        if (processes[shortestProcessIndex].remainingTime == 0) {
+            processes[shortestProcessIndex].isComplete = 1;
+            completedProcesses++;
+            processes[shortestProcessIndex].completionTime = currentTime;
+            processes[shortestProcessIndex].turnaroundTime = processes[shortestProcessIndex].completionTime - processes[shortestProcessIndex].arrivalTime;
+            processes[shortestProcessIndex].waitingTime = processes[shortestProcessIndex].turnaroundTime - processes[shortestProcessIndex].burstTime;
+
+            totalWaitingTime += processes[shortestProcessIndex].waitingTime;
+            totalTurnaroundTime += processes[shortestProcessIndex].turnaroundTime;
+        }
+    }
+    
+    // Display the results
+    printf("\nProcess\tArrival Time\tBurst Time\tCompletion Time\tTurnaround Time\tWaiting Time\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t%d\t\t%d\t\t%d\t\t%d\t\t%d\n",
+               processes[i].pid,
+               processes[i].arrivalTime,
+               processes[i].burstTime,
+               processes[i].completionTime,
+               processes[i].turnaroundTime,
+               processes[i].waitingTime);
+    }
+
+    printf("\nAverage Waiting Time: %.2f\n", (float)totalWaitingTime / n);
+    printf("Average Turnaround Time: %.2f\n", (float)totalTurnaroundTime / n);
+
+    return 0;
+}

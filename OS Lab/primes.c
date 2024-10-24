@@ -1,38 +1,71 @@
-#include<stdio.h>
-#include<pthread.h>
-#include<stdbool.h>  //for true and false
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <stdbool.h>
 
-//find . -type f -name ".txt" | grep -E '/[^aeiouAEIOU][^/][0-9][^/]{2,}\.txt$’
+#define MAX_THREADS 4  // Number of threads to use
 
-int start = 2;
-int end = 20;
-bool is_prime(int n)
-{
-	if(n <= 1)
-		return false;
-	else
-	{
-		for(int i = 2; i*i <= n;i++)
-		{
-			if(n%i == 0)
-				return false;
-		}
-		return true;
-	}	
-}
-void* gen_prime(void* param)
-{
-	for(int i= start;i <= end;i++)
-	{
-		if(is_prime(i))
-			printf("%d ",i);
-	}
-	pthread_exit(NULL);
+// Structure to hold the range for each thread
+typedef struct {
+    int start;
+    int end;
+} PrimeRange;
+
+// Function to check if a number is prime
+bool is_prime(int num) {
+    if (num <= 1) return false;
+    for (int i = 2; i * i <= num; i++) {
+        if (num % i == 0)
+            return false;
+    }
+    return true;
 }
 
-void main()
-{
-	pthread_t thread;
-	pthread_create(&thread, 0, &gen_prime, 0);
-	pthread_join(thread,NULL);
+// Function to be executed by each thread to find prime numbers in the range
+void* find_primes(void* arg) {
+    PrimeRange* range = (PrimeRange*) arg;
+    printf("Thread working on range %d to %d\n", range->start, range->end);
+
+    for (int num = range->start; num <= range->end; num++) {
+        if (is_prime(num)) {
+            printf("%d is prime\n", num);
+        }
+    }
+
+    pthread_exit(NULL);
+}
+
+int main() {
+    int start, end;
+    printf("Enter the starting number: ");
+    scanf("%d", &start);
+    printf("Enter the ending number: ");
+    scanf("%d", &end);
+
+    // Calculate the range size for each thread
+    int total_range = end - start + 1;
+    int range_per_thread = total_range / MAX_THREADS;
+
+    // Create an array of threads and ranges
+    pthread_t threads[MAX_THREADS];
+    PrimeRange ranges[MAX_THREADS];
+
+    // Create threads to process each part of the range
+    for (int i = 0; i < MAX_THREADS; i++) {
+        ranges[i].start = start + i * range_per_thread;
+        ranges[i].end = (i == MAX_THREADS - 1) ? end : (ranges[i].start + range_per_thread - 1);
+        
+        if (pthread_create(&threads[i], NULL, find_primes, (void*)&ranges[i])) {
+            perror("Error creating thread");
+            return 1;
+        }
+    }
+
+    // Wait for all threads to finish
+    for (int i = 0; i < MAX_THREADS; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    printf("All threads finished.\n");
+    return 0;
 }

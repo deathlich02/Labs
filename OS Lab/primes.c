@@ -2,6 +2,8 @@
 #include<pthread.h>
 #include<stdbool.h>  //for true and false
 
+//find . -type f -name ".txt" | grep -E '/[^aeiouAEIOU][^/][0-9][^/]{2,}\.txt$’
+
 int start = 2;
 int end = 20;
 bool is_prime(int n)
